@@ -264,45 +264,69 @@ export type Database = {
         Row: {
           accepted_rows: number
           batch_id: string
+          completed_at: string | null
+          config: Json
+          conflict_rows: number
           created_at: string
           dataset_id: string | null
+          duplicate_rows: number
           error_message: string | null
+          existing_rows: number
+          file_sha256: string | null
           filename: string
           id: string
           instrument_id: string | null
           progress: number
           rejected_rows: number
+          source_rows: number
           status: string
+          storage_path: string | null
           user_id: string
           validation_report: Json
         }
         Insert: {
           accepted_rows?: number
           batch_id: string
+          completed_at?: string | null
+          config?: Json
+          conflict_rows?: number
           created_at?: string
           dataset_id?: string | null
+          duplicate_rows?: number
           error_message?: string | null
+          existing_rows?: number
+          file_sha256?: string | null
           filename: string
           id?: string
           instrument_id?: string | null
           progress?: number
           rejected_rows?: number
+          source_rows?: number
           status?: string
+          storage_path?: string | null
           user_id?: string
           validation_report?: Json
         }
         Update: {
           accepted_rows?: number
           batch_id?: string
+          completed_at?: string | null
+          config?: Json
+          conflict_rows?: number
           created_at?: string
           dataset_id?: string | null
+          duplicate_rows?: number
           error_message?: string | null
+          existing_rows?: number
+          file_sha256?: string | null
           filename?: string
           id?: string
           instrument_id?: string | null
           progress?: number
           rejected_rows?: number
+          source_rows?: number
           status?: string
+          storage_path?: string | null
           user_id?: string
           validation_report?: Json
         }
@@ -335,8 +359,10 @@ export type Database = {
           candle_count: number
           column_mapping: Json
           created_at: string
+          detected_interval_s: number | null
           end_time_utc: string | null
           file_sha256: string | null
+          gap_report: Json
           id: string
           instrument_id: string
           is_active: boolean
@@ -344,6 +370,7 @@ export type Database = {
           rejected_count: number
           source_filename: string | null
           source_type: string
+          spread_unit: string | null
           start_time_utc: string | null
           timeframe: string
           timestamp_format: string | null
@@ -351,13 +378,16 @@ export type Database = {
           user_id: string
           validation_status: string
           version: number
+          volume_type: string | null
         }
         Insert: {
           candle_count?: number
           column_mapping?: Json
           created_at?: string
+          detected_interval_s?: number | null
           end_time_utc?: string | null
           file_sha256?: string | null
+          gap_report?: Json
           id?: string
           instrument_id: string
           is_active?: boolean
@@ -365,6 +395,7 @@ export type Database = {
           rejected_count?: number
           source_filename?: string | null
           source_type?: string
+          spread_unit?: string | null
           start_time_utc?: string | null
           timeframe?: string
           timestamp_format?: string | null
@@ -372,13 +403,16 @@ export type Database = {
           user_id?: string
           validation_status?: string
           version: number
+          volume_type?: string | null
         }
         Update: {
           candle_count?: number
           column_mapping?: Json
           created_at?: string
+          detected_interval_s?: number | null
           end_time_utc?: string | null
           file_sha256?: string | null
+          gap_report?: Json
           id?: string
           instrument_id?: string
           is_active?: boolean
@@ -386,6 +420,7 @@ export type Database = {
           rejected_count?: number
           source_filename?: string | null
           source_type?: string
+          spread_unit?: string | null
           start_time_utc?: string | null
           timeframe?: string
           timestamp_format?: string | null
@@ -393,6 +428,7 @@ export type Database = {
           user_id?: string
           validation_status?: string
           version?: number
+          volume_type?: string | null
         }
         Relationships: [
           {
@@ -959,7 +995,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      copy_dataset_bars: {
+        Args: {
+          _dst: string
+          _excl_end?: string
+          _excl_start?: string
+          _src: string
+        }
+        Returns: number
+      }
+      dataset_daily_coverage: {
+        Args: { _dataset_ids: string[] }
+        Returns: {
+          bars: number
+          dataset_id: string
+          day: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

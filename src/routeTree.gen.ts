@@ -19,6 +19,7 @@ import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/l
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
 import { Route as AuthenticatedPropProfilesRouteImport } from './routes/_authenticated/prop-profiles'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as ApiPublicEngineSplatRouteImport } from './routes/api/public/engine.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicEngineSplatRoute = ApiPublicEngineSplatRouteImport.update({
+  id: '/api/public/engine/$',
+  path: '/api/public/engine/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/models': typeof AuthenticatedModelsRoute
   '/prop-profiles': typeof AuthenticatedPropProfilesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/api/public/engine/$': typeof ApiPublicEngineSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/models': typeof AuthenticatedModelsRoute
   '/prop-profiles': typeof AuthenticatedPropProfilesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/api/public/engine/$': typeof ApiPublicEngineSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/_authenticated/models': typeof AuthenticatedModelsRoute
   '/_authenticated/prop-profiles': typeof AuthenticatedPropProfilesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/api/public/engine/$': typeof ApiPublicEngineSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/models'
     | '/prop-profiles'
     | '/settings'
+    | '/api/public/engine/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/models'
     | '/prop-profiles'
     | '/settings'
+    | '/api/public/engine/$'
   id:
     | '__root__'
     | '/'
@@ -141,12 +152,14 @@ export interface FileRouteTypes {
     | '/_authenticated/models'
     | '/_authenticated/prop-profiles'
     | '/_authenticated/settings'
+    | '/api/public/engine/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiPublicEngineSplatRoute: typeof ApiPublicEngineSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -221,6 +234,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/engine/$': {
+      id: '/api/public/engine/$'
+      path: '/api/public/engine/$'
+      fullPath: '/api/public/engine/$'
+      preLoaderRoute: typeof ApiPublicEngineSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiPublicEngineSplatRoute: ApiPublicEngineSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

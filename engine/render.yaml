@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: model-lab-engine
+    runtime: docker
+    rootDir: engine
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: ENGINE_TOKEN
+        sync: false
+      - key: APP_CALLBACK_URL
+        sync: false
+      - key: REALMARKETAPI_KEY
+        sync: false

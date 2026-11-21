@@ -31,7 +31,9 @@ use the editor.
 
 ## Architecture rules (Model Lab)
 - All numeric/trading computation (CSV parsing, model execution, backtests, live paper worker, prop simulation) runs in one external Python FastAPI Engine under `/engine`; Lovable server code is short-lived JS workers and cannot host it.
-- The browser reaches the Engine only via `engineProxy`/`getEngineHealth` in `src/lib/engine.functions.ts` (requireSupabaseAuth); ENGINE_URL, ENGINE_TOKEN and REALMARKETAPI_KEY stay server-side secrets.
+- The browser reaches the Engine only through authenticated server functions (`src/lib/engine.functions.ts`, `src/lib/imports.functions.ts`); ENGINE_URL, ENGINE_TOKEN and REALMARKETAPI_KEY stay server-side secrets.
+- The Engine holds no database credentials: it writes through `src/routes/api/public/engine.$.ts`, authenticated with ENGINE_TOKEN and scoped to the user_id the proxy sent, because Lovable Cloud's service key cannot leave the app.
+- CSV files upload to the private `imports` bucket under `<user_id>/`; the Engine receives short-lived signed URLs. Append/replace imports create a new dataset version (copy via `copy_dataset_bars`) instead of mutating old ones.
 - Every app table carries `user_id` with owner-only RLS; datasets, market_bars and model_versions are immutable (DB triggers) so backtests stay reproducible.
 - Signed-in pages live under `src/routes/_authenticated/` (client-only gate, shell in `src/components/lab/AppShell.tsx`); public sign-up is disabled, sign-in is at `/login`.
 - Never place real orders; all live positions are simulated.
