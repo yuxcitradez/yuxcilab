@@ -1,11 +1,16 @@
 # Model Lab roadmap
 - [x] Phase 1 — Foundation: auth, schema + RLS, terminal UI, pages, engine-proxy stub
 - [x] Phase 2 — Historical Data Manager (Engine import pipeline built; runs once Engine is deployed on Render)
-- [ ] Deploy Engine on Render + set ENGINE_URL / ENGINE_TOKEN (waiting on user) and publish app (Engine callbacks need the published URL)
-- [ ] Phase 3 — RealMarketAPI integration (API key saved)
-- [ ] Phase 4 — Python Engine + Model Contract (host: Render)
-- [ ] Phase 5 — Backtesting
-- [ ] Phase 6 — Prop-firm simulator
-- [ ] Phase 7 — Live paper trading
-- [ ] Phase 8 — Hardening
-- [ ] Guide user through free Render setup (user can't do it alone; I can't create their Render account)
+- [x] Connect Render Engine — Engine and RealMarketAPI verified Online
+- [x] Model editor, upload/download, immutable save — ORB v2 saved and reloaded through signed-in UI
+- [x] Python validation, exact-hash legacy ORB adapter, shared contract fill rules — US500 +577 / Gold +495 verified locally
+- [x] Backtest configuration, async jobs, results/trades/charts and immutable manifest implemented
+- [x] Prop profile editor, static/trailing replay, daily loss, exact streak DP and moving-block bootstrap implemented; saved profile reloaded
+- [x] Provider account discovery, symbol mapping, password update and guarded paper controls implemented
+- [x] Desktop and phone checks, existing app tests, 16 Python tests passed; seccomp attack test skipped on development host
+- [ ] Deploy updated Engine 0.3.0 and app, verify real jobs through UI — blocked on Render deployment access and publishing approval; current Render version is 0.2.0
+- [ ] Verify callback setting — APP_CALLBACK_URL must be published origin https://yuxcilab.lovable.app (not /api/public/engine)
+- [ ] Contract-v1 DST/golden certification and live shadow test — blocked on strategy fixtures and two-week real observation; legacy ORB stays research-only
+- [ ] Live streaming — actual RealMarketAPI account is FREE, isSocketSupport=false; requires provider plan upgrade and always-on hosting
+- [ ] Advanced prop lifecycle (news, sizing, scheduled payouts, simultaneous accounts, scale-up) — not implemented; basic replay is explicitly scoped
+- [ ] Process restart recovery and full security/load certification — not completed; Docker seccomp needs deployed-image verification

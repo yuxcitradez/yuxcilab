@@ -1,6 +1,6 @@
 import os
 
-ENGINE_VERSION = "0.2.0"
+ENGINE_VERSION = "0.3.0"
 
 
 def env(name: str, default: str | None = None) -> str:

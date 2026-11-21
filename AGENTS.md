@@ -37,3 +37,7 @@ use the editor.
 - Every app table carries `user_id` with owner-only RLS; datasets, market_bars and model_versions are immutable (DB triggers) so backtests stay reproducible.
 - Signed-in pages live under `src/routes/_authenticated/` (client-only gate, shell in `src/components/lab/AppShell.tsx`); public sign-up is disabled, sign-in is at `/login`.
 - Never place real orders; all live positions are simulated.
+- Seal model versions and validation/job results behind authenticated server writes and Engine callbacks; browser grants are read-only so a forged validation cannot authorize a paper deployment.
+- Use one shared closed-bar execution module for contract-v1 backtests and paper trades; preserve the exact-hash uploaded ORB through an explicitly labelled research-only legacy adapter instead of changing its trading rules.
+- Execute untrusted model code only in a secret-free subprocess with seccomp default-deny and CPU/memory/time limits; fail closed when syscall isolation is unavailable.
+- Store asynchronous validation and simulation outcomes in owner-scoped jobs; do not change immutable model code or invent acceptance passes for missing golden/DST fixtures.
