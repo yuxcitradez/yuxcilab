@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Play, Square } from "lucide-react";
@@ -14,6 +15,7 @@ import { DataTable } from "@/components/lab/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DeleteHistoryButton } from "@/components/lab/DeleteHistoryButton";
 import {
   Field,
   selectClass,
@@ -90,6 +92,39 @@ function BacktestsPage() {
     error?: string;
     instruments?: { symbol: string; warnings?: string[] }[];
   } | null;
+  // Stable cell identities keep confirmations open during progress polling.
+  const runColumns = useMemo<ColumnDef<NonNullable<typeof runs.data>[number], unknown>[]>(() => [
+            {
+              accessorKey: "created_at",
+              header: "Created",
+              cell: (c) => String(c.getValue()).slice(0, 16).replace("T", " "),
+            },
+            {
+              accessorKey: "id",
+              header: "Run",
+              cell: (c) => (
+                <Button size="sm" variant="link" onClick={() => setRunId(String(c.getValue()))}>
+                  {String(c.getValue()).slice(0, 8)}
+                </Button>
+              ),
+            },
+            { accessorKey: "status", header: "Status" },
+            {
+              accessorKey: "progress",
+              header: "Progress",
+              cell: (c) => `${Math.round(Number(c.getValue()) * 100)}%`,
+            },
+            {
+              id: "delete",
+              header: "",
+              cell: ({ row }) => (
+                <DeleteHistoryButton kind="backtest" id={row.original.id}
+                  label={`backtest ${row.original.id.slice(0, 8)}`}
+                  disabled={!["completed", "failed", "cancelled"].includes(row.original.status)}
+                  onDeleted={() => { setRunId(""); setJobId(""); }} />
+              ),
+            },
+            ], []);
   async function run() {
     setBusy(true);
     setError(null);
@@ -162,28 +197,7 @@ function BacktestsPage() {
         <DataTable
           data={runs.data ?? []}
           exportName="backtest_runs"
-          columns={[
-            {
-              accessorKey: "created_at",
-              header: "Created",
-              cell: (c) => String(c.getValue()).slice(0, 16).replace("T", " "),
-            },
-            {
-              accessorKey: "id",
-              header: "Run",
-              cell: (c) => (
-                <Button size="sm" variant="link" onClick={() => setRunId(String(c.getValue()))}>
-                  {String(c.getValue()).slice(0, 8)}
-                </Button>
-              ),
-            },
-            { accessorKey: "status", header: "Status" },
-            {
-              accessorKey: "progress",
-              header: "Progress",
-              cell: (c) => `${Math.round(Number(c.getValue()) * 100)}%`,
-            },
-          ]}
+          columns={runColumns}
           empty="No backtests"
         />
         <ErrorText error={runs.error} />

@@ -1,4 +1,5 @@
 # Model Lab roadmap
+- [x] Add confirmed owner-only deletion for backtests and unreferenced historical datasets — signed-in UI removal/cancellation and referenced-data protection verified; five database regression tests passed.
 - [x] Correct the backtest capability check — signed-in ORB v2 / EURUSD run completed at 100%, 120 trades, PnL 476; four regression tests passed.
 - [x] Phase 1 — Foundation: auth, schema + RLS, terminal UI, pages, engine-proxy stub
 - [x] Phase 2 — Historical Data Manager (Engine import pipeline built; runs once Engine is deployed on Render)

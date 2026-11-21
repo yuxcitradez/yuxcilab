@@ -42,3 +42,4 @@ use the editor.
 - Execute untrusted model code only in a secret-free subprocess with seccomp default-deny and CPU/memory/time limits; fail closed when syscall isolation is unavailable.
 - Store asynchronous validation and simulation outcomes in owner-scoped jobs; do not change immutable model code or invent acceptance passes for missing golden/DST fixtures.
 - Map durable job kinds to advertised Engine capabilities explicitly; the backtest job uses the backtests capability so a healthy Engine is not falsely rejected.
+- History deletion uses an authenticated owner-checking transactional database function; serialize dependency checks with job/import writes, reject active work and referenced datasets, and cascade finished backtest artifacts without changing immutable data.

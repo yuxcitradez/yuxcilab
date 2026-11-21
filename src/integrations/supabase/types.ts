@@ -1012,6 +1012,10 @@ export type Database = {
           day: string
         }[]
       }
+      delete_lab_history: {
+        Args: { _id: string; _kind: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

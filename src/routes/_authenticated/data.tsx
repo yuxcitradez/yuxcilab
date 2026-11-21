@@ -17,6 +17,7 @@ import { CoverageHeatmap } from "@/components/lab/CoverageHeatmap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProviderPanel } from "@/components/lab/ProviderPanel";
+import { DeleteHistoryButton } from "@/components/lab/DeleteHistoryButton";
 import {
   Select,
   SelectContent,
@@ -79,7 +80,7 @@ function AddInstrument() {
         .insert({
           action: "instrument.created",
           entity: symbol.trim().toUpperCase(),
-          user_id: u.user!.id,
+          ...(u.user ? { user_id: u.user.id } : {}),
         });
     },
     onSuccess: () => {
@@ -351,6 +352,7 @@ function DataPage() {
                       {d.validation_status}
                     </td>
                     <td className="px-2 py-1">
+                      <div className="flex items-center gap-1">
                       {!d.is_active && d.validation_status !== "cancelled" && (
                         <button
                           className="text-[11px] text-primary"
@@ -382,6 +384,9 @@ function DataPage() {
                           Make active
                         </button>
                       )}
+                      <DeleteHistoryButton kind="dataset" id={d.id} label={`${d.symbol} M1 v${d.version}`}
+                        onDeleted={() => { setSelected((ids) => ids.filter((id) => id !== d.id)); if (gapsFor === d.id) setGapsFor(null); }} />
+                      </div>
                     </td>
                   </tr>
                 );

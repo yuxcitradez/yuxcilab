@@ -29,6 +29,13 @@
       "when": 1795274206382,
       "tag": "0003_protect_verified_engine_results",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795301307352,
+      "tag": "0004_guarded_history_deletion",
+      "breakpoints": true
     }
   ]
 }
