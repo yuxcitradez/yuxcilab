@@ -3,7 +3,7 @@ services:
     name: model-lab-engine
     runtime: docker
     rootDir: engine
-    plan: starter
+    plan: free
     healthCheckPath: /healthz
     envVars:
       - key: ENGINE_TOKEN

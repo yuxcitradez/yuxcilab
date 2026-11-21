@@ -8,3 +8,4 @@
 - [ ] Phase 6 — Prop-firm simulator
 - [ ] Phase 7 — Live paper trading
 - [ ] Phase 8 — Hardening
+- [ ] Guide user through free Render setup (user can't do it alone; I can't create their Render account)

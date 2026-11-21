@@ -13,7 +13,7 @@ It holds **no database credentials**: every write goes to the app's callback rou
 4. After deploy, copy the service URL (`https://model-lab-engine.onrender.com`) into the Lovable secret `ENGINE_URL`.
 5. Settings page → Engine should show **Online**.
 
-Use a paid instance (Starter or higher): the free plan sleeps and would interrupt imports and live paper trading.
+Free plan works for imports and backtests (it sleeps after 15 min idle and wakes in ~1 min). Upgrade to Starter before live paper trading, which needs it awake 24/7.
 
 ## Local
 ```
