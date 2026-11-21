@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Architecture rules (Model Lab)
+- All numeric/trading computation (CSV parsing, model execution, backtests, live paper worker, prop simulation) runs in one external Python FastAPI Engine under `/engine`; Lovable server code is short-lived JS workers and cannot host it.
+- The browser reaches the Engine only via `engineProxy`/`getEngineHealth` in `src/lib/engine.functions.ts` (requireSupabaseAuth); ENGINE_URL, ENGINE_TOKEN and REALMARKETAPI_KEY stay server-side secrets.
+- Every app table carries `user_id` with owner-only RLS; datasets, market_bars and model_versions are immutable (DB triggers) so backtests stay reproducible.
+- Signed-in pages live under `src/routes/_authenticated/` (client-only gate, shell in `src/components/lab/AppShell.tsx`); public sign-up is disabled, sign-in is at `/login`.
+- Never place real orders; all live positions are simulated.
