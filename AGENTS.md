@@ -41,3 +41,4 @@ use the editor.
 - Use one shared closed-bar execution module for contract-v1 backtests and paper trades; preserve the exact-hash uploaded ORB through an explicitly labelled research-only legacy adapter instead of changing its trading rules.
 - Execute untrusted model code only in a secret-free subprocess with seccomp default-deny and CPU/memory/time limits; fail closed when syscall isolation is unavailable.
 - Store asynchronous validation and simulation outcomes in owner-scoped jobs; do not change immutable model code or invent acceptance passes for missing golden/DST fixtures.
+- Map durable job kinds to advertised Engine capabilities explicitly; the backtest job uses the backtests capability so a healthy Engine is not falsely rejected.

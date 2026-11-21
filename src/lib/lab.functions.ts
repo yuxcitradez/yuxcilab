@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
+import { supportsEngineJob } from "@/lib/engine-capabilities";
 
 async function engineRequest(path: string, userId: string, body?: unknown) {
   const url = process.env["ENGINE_URL"];
@@ -183,7 +184,7 @@ export const launchJob = createServerFn({ method: "POST" })
       }
     }
     const health = await engineRequest("/health", context.userId);
-    if (!(health["capabilities"] as string[] | undefined)?.includes(data.kind))
+    if (!supportsEngineJob(health["capabilities"], data.kind))
       throw new Error(
         "Deploy the latest Engine code on Render to enable models, backtests and simulations.",
       );
