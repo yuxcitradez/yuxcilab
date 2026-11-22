@@ -30,6 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 ## Architecture rules (Model Lab)
+- Research stages share validated optional URL selections: historical data and immutable model/settings feed backtests; completed runs feed saved prop environments; expected value reads only matching owner-scoped simulation jobs. This preserves provenance without duplicating computation or changing trading rules.
 - All numeric/trading computation (CSV parsing, model execution, backtests, live paper worker, prop simulation) runs in one external Python FastAPI Engine under `/engine`; Lovable server code is short-lived JS workers and cannot host it.
 - The browser reaches the Engine only through authenticated server functions (`src/lib/engine.functions.ts`, `src/lib/imports.functions.ts`); ENGINE_URL, ENGINE_TOKEN and REALMARKETAPI_KEY stay server-side secrets.
 - The Engine holds no database credentials: it writes through `src/routes/api/public/engine.$.ts`, authenticated with ENGINE_TOKEN and scoped to the user_id the proxy sent, because Lovable Cloud's service key cannot leave the app.

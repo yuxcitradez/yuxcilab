@@ -1,9 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Play, Square } from "lucide-react";
+import { Play, Square, ArrowRight } from "lucide-react";
+import { researchSearch, modelParameters } from "@/lib/research-flow";
+import { ResearchFlow } from "@/components/lab/ResearchFlow";
+import { Textarea } from "@/components/ui/textarea";
 import { pageHead } from "@/lib/head";
 import { launchJob, cancelJob } from "@/lib/lab.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +29,7 @@ import {
   JobStatus,
 } from "@/components/lab/Workflow";
 export const Route = createFileRoute("/_authenticated/backtests")({
+  validateSearch: researchSearch,
   head: () =>
     pageHead(
       "Backtests",
@@ -34,15 +38,28 @@ export const Route = createFileRoute("/_authenticated/backtests")({
   component: BacktestsPage,
 });
 function BacktestsPage() {
+  const selection = Route.useSearch();
   const library = useLibrary();
   const jobs = useJobs("backtest");
   const launch = useServerFn(launchJob);
   const cancel = useServerFn(cancelJob);
-  const [version, setVersion] = useState("");
-  const [datasets, setDatasets] = useState<string[]>([]);
+  const [version, setVersion] = useState(selection.modelVersionId ?? "");
+  const [datasets, setDatasets] = useState<string[]>(selection.datasetIds ?? []);
+  const [params, setParams] = useState("{}");
+  const selectedVersion = library.data?.models
+    .flatMap((model) => model.model_versions)
+    .find((v) => v.id === version);
+  useEffect(() => {
+    setParams(JSON.stringify(selectedVersion?.params ?? {}, null, 2));
+  }, [selectedVersion?.id]);
+  useEffect(() => {
+    if (selection.modelVersionId) setVersion(selection.modelVersionId);
+    if (selection.datasetIds) setDatasets(selection.datasetIds);
+    if (selection.runId) setRunId(selection.runId);
+  }, [selection.modelVersionId, selection.datasetIds, selection.runId]);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
-  const [runId, setRunId] = useState("");
+  const [runId, setRunId] = useState(selection.runId ?? "");
   const [jobId, setJobId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -58,7 +75,7 @@ function BacktestsPage() {
       return data;
     },
   });
-  const selected = runs.data?.find((r) => r.id === runId) ?? runs.data?.[0];
+  const selected = runId ? runs.data?.find((r) => r.id === runId) : runs.data?.[0];
   const activeJob = jobs.data?.find(
     (j) => (j.payload as Record<string, unknown>)["run_id"] === selected?.id,
   );
@@ -93,38 +110,47 @@ function BacktestsPage() {
     instruments?: { symbol: string; warnings?: string[] }[];
   } | null;
   // Stable cell identities keep confirmations open during progress polling.
-  const runColumns = useMemo<ColumnDef<NonNullable<typeof runs.data>[number], unknown>[]>(() => [
-            {
-              accessorKey: "created_at",
-              header: "Created",
-              cell: (c) => String(c.getValue()).slice(0, 16).replace("T", " "),
-            },
-            {
-              accessorKey: "id",
-              header: "Run",
-              cell: (c) => (
-                <Button size="sm" variant="link" onClick={() => setRunId(String(c.getValue()))}>
-                  {String(c.getValue()).slice(0, 8)}
-                </Button>
-              ),
-            },
-            { accessorKey: "status", header: "Status" },
-            {
-              accessorKey: "progress",
-              header: "Progress",
-              cell: (c) => `${Math.round(Number(c.getValue()) * 100)}%`,
-            },
-            {
-              id: "delete",
-              header: "",
-              cell: ({ row }) => (
-                <DeleteHistoryButton kind="backtest" id={row.original.id}
-                  label={`backtest ${row.original.id.slice(0, 8)}`}
-                  disabled={!["completed", "failed", "cancelled"].includes(row.original.status)}
-                  onDeleted={() => { setRunId(""); setJobId(""); }} />
-              ),
-            },
-            ], []);
+  const runColumns = useMemo<ColumnDef<NonNullable<typeof runs.data>[number], unknown>[]>(
+    () => [
+      {
+        accessorKey: "created_at",
+        header: "Created",
+        cell: (c) => String(c.getValue()).slice(0, 16).replace("T", " "),
+      },
+      {
+        accessorKey: "id",
+        header: "Run",
+        cell: (c) => (
+          <Button size="sm" variant="link" onClick={() => setRunId(String(c.getValue()))}>
+            {String(c.getValue()).slice(0, 8)}
+          </Button>
+        ),
+      },
+      { accessorKey: "status", header: "Status" },
+      {
+        accessorKey: "progress",
+        header: "Progress",
+        cell: (c) => `${Math.round(Number(c.getValue()) * 100)}%`,
+      },
+      {
+        id: "delete",
+        header: "",
+        cell: ({ row }) => (
+          <DeleteHistoryButton
+            kind="backtest"
+            id={row.original.id}
+            label={`backtest ${row.original.id.slice(0, 8)}`}
+            disabled={!["completed", "failed", "cancelled"].includes(row.original.status)}
+            onDeleted={() => {
+              setRunId("");
+              setJobId("");
+            }}
+          />
+        ),
+      },
+    ],
+    [],
+  );
   async function run() {
     setBusy(true);
     setError(null);
@@ -134,6 +160,7 @@ function BacktestsPage() {
           kind: "backtest",
           modelVersionId: version,
           datasetIds: datasets,
+          params: modelParameters(params),
           ...(start ? { start: `${start}T00:00:00Z` } : {}),
           ...(end ? { end: `${end}T23:59:59Z` } : {}),
         },
@@ -150,6 +177,14 @@ function BacktestsPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Backtests" />
+      <ResearchFlow
+        active="/backtests"
+        selection={{
+          ...(version ? { modelVersionId: version } : {}),
+          datasetIds: datasets,
+          ...(selected ? { runId: selected.id } : {}),
+        }}
+      />
       <Panel
         title="Run configuration"
         actions={
@@ -175,6 +210,16 @@ function BacktestsPage() {
           </Field>
           <Field label="End date (UTC)">
             <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          </Field>
+        </div>
+        <div className="mt-3">
+          <Field label="Model settings (JSON)">
+            <Textarea
+              aria-label="Backtest model settings"
+              className="num min-h-24 text-xs"
+              value={params}
+              onChange={(e) => setParams(e.target.value)}
+            />
           </Field>
         </div>
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-3">
@@ -204,10 +249,25 @@ function BacktestsPage() {
       </Panel>
       {selected && (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="num text-xs">
               Run {selected.id.slice(0, 8)} · {selected.status}
             </h2>
+            {selected.status === "completed" && (
+              <Button asChild size="sm">
+                <Link
+                  to="/prop-profiles"
+                  search={researchSearch({
+                    runId: selected.id,
+                    modelVersionId: selected.model_version_id,
+                    datasetIds: (selected.config as Record<string, unknown>)["dataset_ids"],
+                  })}
+                >
+                  <ArrowRight />
+                  Apply prop-firm environment
+                </Link>
+              </Button>
+            )}
             {activeJob && ["queued", "running"].includes(activeJob.status) && (
               <Button
                 size="sm"

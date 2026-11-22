@@ -11,6 +11,7 @@ import {
   Radio,
   Settings,
   LogOut,
+  TrendingUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getEngineHealth } from "@/lib/engine.functions";
@@ -19,10 +20,11 @@ import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/data", label: "Data", icon: Database },
-  { to: "/models", label: "Models", icon: Code2 },
+  { to: "/data", label: "Historical Data", icon: Database },
+  { to: "/models", label: "Model & Settings", icon: Code2 },
   { to: "/backtests", label: "Backtests", icon: FlaskConical },
-  { to: "/prop-profiles", label: "Prop Profiles", icon: Building2 },
+  { to: "/prop-profiles", label: "Prop Environment", icon: Building2 },
+  { to: "/expected-value", label: "Expected Value", icon: TrendingUp },
   { to: "/live", label: "Live", icon: Radio },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;

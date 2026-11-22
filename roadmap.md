@@ -1,4 +1,5 @@
 # Model Lab roadmap
+- [x] Reorganize research as historical data + model/settings → backtest → prop-firm environment → expected value; real US500 three-day run (3 trades) and saved 19/60 profile produced EV -8.60; selections, result refresh, mobile layout and nine tests verified.
 - [x] Add confirmed owner-only deletion for backtests and unreferenced historical datasets — signed-in UI removal/cancellation and referenced-data protection verified; five database regression tests passed.
 - [x] Correct the backtest capability check — signed-in ORB v2 / EURUSD run completed at 100%, 120 trades, PnL 476; four regression tests passed.
 - [x] Phase 1 — Foundation: auth, schema + RLS, terminal UI, pages, engine-proxy stub

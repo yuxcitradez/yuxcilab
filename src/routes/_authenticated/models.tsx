@@ -1,8 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { FileUp, Save, ShieldCheck, Plus, Download } from "lucide-react";
+import { FileUp, Save, ShieldCheck, Plus, Download, ArrowRight } from "lucide-react";
+import { ResearchFlow } from "@/components/lab/ResearchFlow";
+import { researchSearch } from "@/lib/research-flow";
 import { toast } from "sonner";
 import { pageHead } from "@/lib/head";
 import { saveModelVersion, launchJob } from "@/lib/lab.functions";
@@ -20,12 +22,14 @@ import {
 } from "@/components/lab/Workflow";
 
 export const Route = createFileRoute("/_authenticated/models")({
+  validateSearch: researchSearch,
   head: () =>
     pageHead("Models", "Python model library, immutable versions and verified acceptance results."),
   component: ModelsPage,
 });
 const initialCode = `META = {"name": "new_model", "timeframe": "M1", "params": {}}\n\ndef on_bar(ctx, bar):\n    return []\n`;
 function ModelsPage() {
+  const selection = Route.useSearch();
   const library = useLibrary();
   const jobs = useJobs("model_validation");
   const qc = useQueryClient();
@@ -37,7 +41,7 @@ function ModelsPage() {
   const [description, setDescription] = useState("");
   const [code, setCode] = useState(initialCode);
   const [params, setParams] = useState("{}");
-  const [dataset, setDataset] = useState("");
+  const [dataset, setDataset] = useState(selection.datasetIds?.[0] ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [jobId, setJobId] = useState("");
@@ -59,6 +63,19 @@ function ModelsPage() {
       setParams(JSON.stringify(version?.params ?? {}, null, 2));
     }
   }, [model]);
+  useEffect(() => {
+    if (!selection.modelVersionId || !library.data) return;
+    const owner = library.data.models.find((m) =>
+      m.model_versions.some((v) => v.id === selection.modelVersionId),
+    );
+    const v = owner?.model_versions.find((v) => v.id === selection.modelVersionId);
+    if (owner && v) {
+      setModelId(owner.id);
+      setVersionId(v.id);
+      setCode(v.code);
+      setParams(JSON.stringify(v.params, null, 2));
+    }
+  }, [selection.modelVersionId, library.data]);
   const validation = jobs.data?.find(
     (j) =>
       (j.payload as Record<string, unknown>)["model_version_id"] === versionId &&
@@ -144,6 +161,14 @@ function ModelsPage() {
             New model
           </Button>
         }
+      />
+      <ResearchFlow
+        active="/models"
+        selection={{
+          ...selection,
+          ...(versionId ? { modelVersionId: versionId } : {}),
+          ...(dataset ? { datasetIds: [dataset] } : {}),
+        }}
       />
       <ErrorText error={library.error} />
       <div className="grid gap-4 lg:grid-cols-[230px_minmax(0,1fr)]">
@@ -321,6 +346,20 @@ function ModelsPage() {
               </p>
             )}
             {jobId && <JobStatus jobId={jobId} />}
+            {versionId && report?.research_ready && (
+              <Button asChild size="sm" className="mt-3">
+                <Link
+                  to="/backtests"
+                  search={{
+                    modelVersionId: versionId,
+                    datasetIds: selection.datasetIds ?? (dataset ? [dataset] : []),
+                  }}
+                >
+                  <ArrowRight />
+                  Configure backtest
+                </Link>
+              </Button>
+            )}
           </Panel>
         </div>
       </div>

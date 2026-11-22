@@ -1,4 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
+import { ResearchFlow } from "@/components/lab/ResearchFlow";
+import { researchSearch } from "@/lib/research-flow";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -27,6 +30,7 @@ import {
 } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/data")({
+  validateSearch: researchSearch,
   head: () =>
     pageHead("Data", "Historical data manager, instruments and market-data provider status."),
   component: DataPage,
@@ -75,13 +79,11 @@ function AddInstrument() {
         point_size: Math.pow(10, -d),
       });
       if (error) throw error;
-      await supabase
-        .from("audit_log")
-        .insert({
-          action: "instrument.created",
-          entity: symbol.trim().toUpperCase(),
-          ...(u.user ? { user_id: u.user.id } : {}),
-        });
+      await supabase.from("audit_log").insert({
+        action: "instrument.created",
+        entity: symbol.trim().toUpperCase(),
+        ...(u.user ? { user_id: u.user.id } : {}),
+      });
     },
     onSuccess: () => {
       toast.success("Instrument added");
@@ -163,9 +165,10 @@ type Ds = {
 const fmt = (t: string | null) => (t ? t.slice(0, 16).replace("T", " ") : "—");
 
 function DataPage() {
+  const selection = Route.useSearch();
   const [search, setSearch] = useState("");
   const [onlyActive, setOnlyActive] = useState(true);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>(selection.datasetIds ?? []);
   const [gapsFor, setGapsFor] = useState<string | null>(null);
   const healthFn = useServerFn(getEngineHealth);
   const health = useQuery({ queryKey: ["engine-health"], queryFn: () => healthFn() });
@@ -237,22 +240,41 @@ function DataPage() {
         title="Data"
         subtitle="Each import creates a new immutable dataset version; nothing is ever overwritten in place."
       />
+      <ResearchFlow active="/data" selection={{ ...selection, datasetIds: selected }} />
 
       <Panel
         title="Historical data manager"
         actions={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              downloadCsv(
-                "datasets.csv",
-                rows.map(({ gap_report, ...r }) => ({ ...r, gaps: gap_report.length })),
-              )
-            }
-          >
-            CSV
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link
+                to="/models"
+                search={{
+                  ...selection,
+                  datasetIds: selIds.filter((id) =>
+                    ds.data?.some(
+                      (d) => d.id === id && ["valid", "warning"].includes(d.validation_status),
+                    ),
+                  ),
+                }}
+              >
+                <ArrowRight />
+                Model & settings
+              </Link>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                downloadCsv(
+                  "datasets.csv",
+                  rows.map(({ gap_report, ...r }) => ({ ...r, gaps: gap_report.length })),
+                )
+              }
+            >
+              CSV
+            </Button>
+          </div>
         }
       >
         <div className="mb-2 flex flex-wrap items-center gap-3">
@@ -353,39 +375,46 @@ function DataPage() {
                     </td>
                     <td className="px-2 py-1">
                       <div className="flex items-center gap-1">
-                      {!d.is_active && d.validation_status !== "cancelled" && (
-                        <button
-                          className="text-[11px] text-primary"
-                          onClick={async () => {
-                            const target = (ds.data ?? []).find((x) => x.id === d.id);
-                            if (!target) return;
-                            const others = (ds.data ?? []).filter(
-                              (x) =>
-                                x.symbol === target.symbol &&
-                                x.timeframe === target.timeframe &&
-                                x.is_active,
-                            );
-                            for (const o of others)
-                              await supabase
+                        {!d.is_active && d.validation_status !== "cancelled" && (
+                          <button
+                            className="text-[11px] text-primary"
+                            onClick={async () => {
+                              const target = (ds.data ?? []).find((x) => x.id === d.id);
+                              if (!target) return;
+                              const others = (ds.data ?? []).filter(
+                                (x) =>
+                                  x.symbol === target.symbol &&
+                                  x.timeframe === target.timeframe &&
+                                  x.is_active,
+                              );
+                              for (const o of others)
+                                await supabase
+                                  .from("datasets")
+                                  .update({ is_active: false })
+                                  .eq("id", o.id);
+                              const { error } = await supabase
                                 .from("datasets")
-                                .update({ is_active: false })
-                                .eq("id", o.id);
-                            const { error } = await supabase
-                              .from("datasets")
-                              .update({ is_active: true })
-                              .eq("id", d.id);
-                            if (error) toast.error(error.message);
-                            else {
-                              toast.success(`v${d.version} is now active`);
-                              ds.refetch();
-                            }
+                                .update({ is_active: true })
+                                .eq("id", d.id);
+                              if (error) toast.error(error.message);
+                              else {
+                                toast.success(`v${d.version} is now active`);
+                                ds.refetch();
+                              }
+                            }}
+                          >
+                            Make active
+                          </button>
+                        )}
+                        <DeleteHistoryButton
+                          kind="dataset"
+                          id={d.id}
+                          label={`${d.symbol} M1 v${d.version}`}
+                          onDeleted={() => {
+                            setSelected((ids) => ids.filter((id) => id !== d.id));
+                            if (gapsFor === d.id) setGapsFor(null);
                           }}
-                        >
-                          Make active
-                        </button>
-                      )}
-                      <DeleteHistoryButton kind="dataset" id={d.id} label={`${d.symbol} M1 v${d.version}`}
-                        onDeleted={() => { setSelected((ids) => ids.filter((id) => id !== d.id)); if (gapsFor === d.id) setGapsFor(null); }} />
+                        />
                       </div>
                     </td>
                   </tr>

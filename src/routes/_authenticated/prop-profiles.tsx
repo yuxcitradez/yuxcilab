@@ -1,14 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, Save, Play } from "lucide-react";
+import { Plus, Save, Play, ArrowRight } from "lucide-react";
 import { pageHead } from "@/lib/head";
 import { supabase } from "@/integrations/supabase/client";
 import { launchJob } from "@/lib/lab.functions";
 import { PageHeader, Panel } from "@/components/lab/Panel";
-import { MetricCard } from "@/components/lab/MetricCard";
-import { EquityCurve } from "@/components/lab/Charts";
+import { ResearchFlow } from "@/components/lab/ResearchFlow";
+import { researchSearch, matchesSimulation } from "@/lib/research-flow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,9 +21,10 @@ import {
 } from "@/components/lab/Workflow";
 import type { Json } from "@/integrations/supabase/types";
 export const Route = createFileRoute("/_authenticated/prop-profiles")({
+  validateSearch: researchSearch,
   head: () =>
     pageHead(
-      "Prop Profiles",
+      "Prop-firm Environment",
       "Prop account rules, account-faithful replay and bankroll risk simulation.",
     ),
   component: PropPage,
@@ -47,20 +48,36 @@ const defaults = {
   daily_reset_time: "00:00",
 };
 function PropPage() {
+  const selection = Route.useSearch();
+  const navigate = Route.useNavigate();
   const library = useLibrary();
   const jobs = useJobs("prop_simulation");
   const qc = useQueryClient();
   const launch = useServerFn(launchJob);
-  const [id, setId] = useState("");
+  const [id, setId] = useState(selection.profileId ?? "");
   const [name, setName] = useState("");
   const [firm, setFirm] = useState("");
   const [rules, setRules] = useState<Record<string, string | number>>(defaults);
-  const [runId, setRunId] = useState("");
+  const [runId, setRunId] = useState(selection.runId ?? "");
   const [bankroll, setBankroll] = useState(190);
   const [horizon, setHorizon] = useState(120);
   const [jobId, setJobId] = useState("");
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const loadedProfile = useRef("");
+  useEffect(() => {
+    if (!selection.profileId || loadedProfile.current === selection.profileId) return;
+    const profile = library.data?.profiles.find((p) => p.id === selection.profileId);
+    if (!profile) return;
+    loadedProfile.current = profile.id;
+    setId(profile.id);
+    setName(profile.name);
+    setFirm(profile.firm_name ?? "");
+    setRules({ ...defaults, ...(profile.rules as Record<string, string | number>) });
+  }, [selection.profileId, library.data]);
+  useEffect(() => {
+    if (selection.runId) setRunId(selection.runId);
+  }, [selection.runId]);
   const runs = useQuery({
     queryKey: ["completed-runs"],
     queryFn: async () => {
@@ -74,30 +91,23 @@ function PropPage() {
     },
   });
   const job =
-    jobs.data?.find((j) => j.id === jobId) ??
-    jobs.data?.find(
-      (j) =>
-        (j.payload as Record<string, unknown>)["profile_id"] === id && j.status === "completed",
-    );
-  const result = job?.result as
-    | {
-        hit_rate: number;
-        break_even: number;
-        ev_per_account: number;
-        block_bootstrap_ruin: number;
-        wilson_95: number[];
-        worst_losing_cluster: number;
-        ruin_uncertainty_range: number[];
-        warnings: string[];
-        replay: {
-          ending_balance: number;
-          breach: string | null;
-          passed: boolean;
-          curve: { t: string; v: number }[];
-        };
-        bankroll_curve: { bankroll: number; ruin_probability: number }[];
-      }
-    | undefined;
+    runId && id
+      ? jobs.data?.find(
+          (j) =>
+            matchesSimulation(j, { runId, profileId: id }) &&
+            (jobId ? j.id === jobId : j.status === "completed"),
+        )
+      : undefined;
+  const savedProfile = library.data?.profiles.find((p) => p.id === id);
+  const dirty =
+    !!savedProfile &&
+    (name !== savedProfile.name ||
+      firm !== (savedProfile.firm_name ?? "") ||
+      JSON.stringify(rules) !==
+        JSON.stringify({
+          ...defaults,
+          ...(savedProfile.rules as Record<string, string | number>),
+        }));
   async function save() {
     setBusy(true);
     setError(null);
@@ -129,6 +139,10 @@ function PropPage() {
         data: { kind: "prop_simulation", runId, profileId: id, bankroll, horizonDays: horizon },
       });
       setJobId(r.jobId);
+      await navigate({
+        to: "/expected-value",
+        search: { ...selection, runId, profileId: id, jobId: r.jobId },
+      });
     } catch (e) {
       setError(e);
     } finally {
@@ -138,7 +152,7 @@ function PropPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Prop Profiles"
+        title="Prop-firm environment"
         actions={
           <Button
             size="sm"
@@ -154,6 +168,10 @@ function PropPage() {
             New profile
           </Button>
         }
+      />
+      <ResearchFlow
+        active="/prop-profiles"
+        selection={{ ...selection, ...(runId ? { runId } : {}), ...(id ? { profileId: id } : {}) }}
       />
       <div className="grid gap-4 lg:grid-cols-[210px_minmax(0,1fr)]">
         <section className="space-y-2">
@@ -231,11 +249,11 @@ function PropPage() {
             <ErrorText error={error ?? library.error} />
           </Panel>
           <Panel
-            title="Replay and bankroll risk"
+            title="Backtest → prop-firm environment"
             actions={
-              <Button size="sm" disabled={busy || !id || !runId} onClick={simulate}>
+              <Button size="sm" disabled={busy || !id || !runId || dirty} onClick={simulate}>
                 <Play />
-                Simulate saved profile
+                Calculate expected value
               </Button>
             }
           >
@@ -274,49 +292,15 @@ function PropPage() {
             </div>
             {jobId && <JobStatus jobId={jobId} />}
           </Panel>
-          {result && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <MetricCard
-                  label="Observed TP rate"
-                  value={`${(result.hit_rate * 100).toFixed(2)}%`}
-                />
-                <MetricCard
-                  label="Break-even TP rate"
-                  value={`${(result.break_even * 100).toFixed(2)}%`}
-                />
-                <MetricCard label="EV / account" value={result.ev_per_account.toFixed(2)} />
-                <MetricCard
-                  label="Block-bootstrap ruin"
-                  value={`${(result.block_bootstrap_ruin * 100).toFixed(2)}%`}
-                />
-              </div>
-              <p className="text-xs">
-                Account replay:{" "}
-                {result.replay.breach
-                  ? `breached (${result.replay.breach})`
-                  : result.replay.passed
-                    ? "target passed"
-                    : "in progress"}{" "}
-                · Ending balance {result.replay.ending_balance.toFixed(2)}
-              </p>
-              <Panel title="Account replay equity">
-                <EquityCurve data={result.replay.curve} />
-              </Panel>
-              <Panel title="Bankroll vs ruin probability">
-                <EquityCurve
-                  data={result.bankroll_curve.map((p) => ({
-                    t: String(p.bankroll),
-                    v: p.ruin_probability * 100,
-                  }))}
-                />
-              </Panel>
-              {result.warnings.map((w) => (
-                <p key={w} className="text-xs text-warning">
-                  {w}
-                </p>
-              ))}
-            </>
+          {dirty && <p className="text-xs text-warning">Unsaved profile changes</p>}
+          <ErrorText error={error ?? runs.error ?? jobs.error} />
+          {job?.status === "completed" && (
+            <Button asChild size="sm" variant="outline">
+              <Link to="/expected-value" search={{ runId, profileId: id, jobId: job.id }}>
+                <ArrowRight />
+                View expected value
+              </Link>
+            </Button>
           )}
         </div>
       </div>

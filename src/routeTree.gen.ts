@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedBacktestsRouteImport } from './routes/_authenticated/backtests'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDataRouteImport } from './routes/_authenticated/data'
+import { Route as AuthenticatedExpectedValueRouteImport } from './routes/_authenticated/expected-value'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedModelsRouteImport } from './routes/_authenticated/models'
 import { Route as AuthenticatedPropProfilesRouteImport } from './routes/_authenticated/prop-profiles'
@@ -50,6 +51,12 @@ const AuthenticatedDataRoute = AuthenticatedDataRouteImport.update({
   path: '/data',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedExpectedValueRoute =
+  AuthenticatedExpectedValueRouteImport.update({
+    id: '/expected-value',
+    path: '/expected-value',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
   id: '/live',
   path: '/live',
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/backtests': typeof AuthenticatedBacktestsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/data': typeof AuthenticatedDataRoute
+  '/expected-value': typeof AuthenticatedExpectedValueRoute
   '/live': typeof AuthenticatedLiveRoute
   '/models': typeof AuthenticatedModelsRoute
   '/prop-profiles': typeof AuthenticatedPropProfilesRoute
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
   '/backtests': typeof AuthenticatedBacktestsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/data': typeof AuthenticatedDataRoute
+  '/expected-value': typeof AuthenticatedExpectedValueRoute
   '/live': typeof AuthenticatedLiveRoute
   '/models': typeof AuthenticatedModelsRoute
   '/prop-profiles': typeof AuthenticatedPropProfilesRoute
@@ -109,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated/backtests': typeof AuthenticatedBacktestsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/data': typeof AuthenticatedDataRoute
+  '/_authenticated/expected-value': typeof AuthenticatedExpectedValueRoute
   '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/_authenticated/models': typeof AuthenticatedModelsRoute
   '/_authenticated/prop-profiles': typeof AuthenticatedPropProfilesRoute
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/backtests'
     | '/dashboard'
     | '/data'
+    | '/expected-value'
     | '/live'
     | '/models'
     | '/prop-profiles'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/backtests'
     | '/dashboard'
     | '/data'
+    | '/expected-value'
     | '/live'
     | '/models'
     | '/prop-profiles'
@@ -148,6 +160,7 @@ export interface FileRouteTypes {
     | '/_authenticated/backtests'
     | '/_authenticated/dashboard'
     | '/_authenticated/data'
+    | '/_authenticated/expected-value'
     | '/_authenticated/live'
     | '/_authenticated/models'
     | '/_authenticated/prop-profiles'
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDataRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/expected-value': {
+      id: '/_authenticated/expected-value'
+      path: '/expected-value'
+      fullPath: '/expected-value'
+      preLoaderRoute: typeof AuthenticatedExpectedValueRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/live': {
       id: '/_authenticated/live'
       path: '/live'
@@ -248,6 +268,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBacktestsRoute: typeof AuthenticatedBacktestsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDataRoute: typeof AuthenticatedDataRoute
+  AuthenticatedExpectedValueRoute: typeof AuthenticatedExpectedValueRoute
   AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
   AuthenticatedModelsRoute: typeof AuthenticatedModelsRoute
   AuthenticatedPropProfilesRoute: typeof AuthenticatedPropProfilesRoute
@@ -258,6 +279,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBacktestsRoute: AuthenticatedBacktestsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDataRoute: AuthenticatedDataRoute,
+  AuthenticatedExpectedValueRoute: AuthenticatedExpectedValueRoute,
   AuthenticatedLiveRoute: AuthenticatedLiveRoute,
   AuthenticatedModelsRoute: AuthenticatedModelsRoute,
   AuthenticatedPropProfilesRoute: AuthenticatedPropProfilesRoute,
