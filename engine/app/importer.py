@@ -8,7 +8,7 @@ import httpx
 from .callback import AppClient
 from .csv_import import process
 
-CHUNK = 5000
+CHUNK = 1000
 _cancel: set[str] = set()
 _lock = threading.Lock()
 
@@ -27,10 +27,22 @@ def _f(v):
     return None if v is None or (isinstance(v, float) and math.isnan(v)) else float(v)
 
 
+def _abandon(app: AppClient, did) -> None:
+    """Leave no half-written active version behind after a failure or cancel."""
+    if not did:
+        return
+    try:
+        app.call("datasets/finalize", {"dataset_id": did, "status": "failed", "activate": False})
+    except Exception:
+        traceback.print_exc()
+
+
 def run_file(user_id: str, job: dict) -> None:
     app = AppClient(user_id)
     fid = job["file_id"]
     cfg = job.get("config") or {}
+    current = {"did": None}
+
     def upd(**patch):
         app.call("files/update", {"file_id": fid, "patch": patch})
     try:
@@ -86,6 +98,7 @@ def run_file(user_id: str, job: dict) -> None:
                 "spread_unit": cfg.get("spread_unit"), "volume_type": cfg.get("volume_type") or "tick",
                 "detected_interval_s": g.interval_s, "gap_report": g.gaps[:1000], "validation_status": "pending"}})
             did = ds["id"]
+            current["did"] = did
             copied = 0
             if copy_src:
                 copied = app.call("datasets/copy", {"src": copy_src, "dst": did,
@@ -105,6 +118,7 @@ def run_file(user_id: str, job: dict) -> None:
             app.call("datasets/finalize", {"dataset_id": did, "status": status, "activate": cfg.get("activate", True),
                                            "rejected_count": g.stats["rejected_rows"] + g.stats["conflict_rows"]})
             dataset_ids.append(did)
+            current["did"] = None
             totals["source_rows"] += g.stats["source_rows"]
             totals["accepted_rows"] += n
             totals["rejected_rows"] += g.stats["rejected_rows"]
@@ -117,9 +131,11 @@ def run_file(user_id: str, job: dict) -> None:
         upd(status="completed", progress=1, dataset_id=dataset_ids[0] if dataset_ids else None,
             validation_report={"groups": reports, "write_mode": mode}, **totals, completed=True)
     except InterruptedError:
+        _abandon(app, current["did"])
         upd(status="cancelled", completed=True)
     except Exception as e:  # report, never swallow
         traceback.print_exc()
+        _abandon(app, current["did"])
         try:
             upd(status="failed", error_message=str(e)[:1000], completed=True)
         except Exception:

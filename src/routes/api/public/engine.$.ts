@@ -574,7 +574,7 @@ export const Route = createFileRoute("/api/public/engine/$")({
               .select("instrument_id, timeframe, version")
               .eq("id", did)
               .single();
-            const activate = Boolean(body["activate"]) && body["status"] !== "cancelled";
+            const activate = Boolean(body["activate"]) && !["cancelled", "failed"].includes(String(body["status"]));
             if (activate && ds) {
               await db
                 .from("datasets")

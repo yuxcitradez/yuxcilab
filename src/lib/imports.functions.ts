@@ -48,15 +48,15 @@ export const cancelImport = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: f } = await context.supabase.from("data_import_files").select("id, status").eq("id", data.fileId).maybeSingle();
     if (!f) return { ok: false };
-    if (["pending", "waiting_engine", "queued"].includes(f.status)) {
-      await context.supabase.from("data_import_files").update({ status: "cancelled" }).eq("id", f.id);
-      return { ok: true };
-    }
+    if (["completed", "failed", "cancelled"].includes(f.status)) return { ok: true };
+    // Mark cancelled in the app first: if the Engine restarted it no longer knows this job and would never report back.
+    await context.supabase.from("data_import_files").update({ status: "cancelled", error_message: "Cancelled by user" }).eq("id", f.id);
     const url = process.env["ENGINE_URL"];
     const token = process.env["ENGINE_TOKEN"];
-    if (!url || !token) return { ok: false };
-    await fetch(url.replace(/\/$/, "") + `/v1/data/imports/${f.id}/cancel`, {
-      method: "POST", headers: { Authorization: `Bearer ${token}`, "X-User-Id": context.userId },
-    }).catch(() => null);
+    if (url && token) {
+      await fetch(url.replace(/\/$/, "") + `/v1/data/imports/${f.id}/cancel`, {
+        method: "POST", headers: { Authorization: `Bearer ${token}`, "X-User-Id": context.userId },
+      }).catch(() => null);
+    }
     return { ok: true };
   });
